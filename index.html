@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>সরকারি কর্মচারী ছুটি ব্যবস্থাপনা ড্যাশবোর্ড</title>
+    <!-- Chart.js and FontAwesome for Modern UI -->
+    <script src="https://jsdelivr.net"></script>
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --dark-color: #212529;
+            --light-bg: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--light-bg);
+            color: var(--dark-color);
+        }
+        .navbar {
+            background-color: #0b2240;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid var(--light-bg);
+            padding-bottom: 10px;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+        }
+        .stat-cl { background-color: var(--primary-color); }
+        .stat-el { background-color: var(--success-color); }
+        .stat-official { background-color: var(--warning-color); color: #333; }
+        .stat-box h3 { margin: 5px 0; font-size: 1.8rem; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            transition: 0.3s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-export {
+            background-color: #6c757d;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background-color: #f1f3f5; }
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .badge-pending { background-color: #ffeeba; color: #856404; }
+        .badge-approved { background-color: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2><i class="fa-solid solid fa-laptop-file"></i> লিভ ট্র্যাকার ড্যাশবোর্ড</h2>
+        <div><i class="fa-solid fa-cloud-arrow-up"></i> ক্লাউড সিঙ্ক সক্রিয়</div>
+    </div>
+
+    <div class="container">
+        <!-- বার্ষিক ছুটির কোটা ও চার্ট -->
+        <div class="grid">
+            <div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-chart-pie"></i> বার্ষিক ছুটির ব্যালেন্স (লাইভ কোটা)</div>
+                    <div class="stats-container">
+                        <div class="stat-box stat-cl">
+                            <div>CL (নৈমিত্তিক) বাকি</div>
+                            <h3 id="cl-balance">২০</h3>
+                        </div>
+                        <div class="stat-box stat-el">
+                            <div>EL (অর্জিত) বাকি</div>
+                            <h3 id="el-balance">৩০</h3>
+                        </div>
+                        <div class="stat-box stat-official">
+                            <div>সরকারি অনুমতি বাকি</div>
+                            <h3 id="off-balance">১০</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ছুটির তালিকা -->
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-list"></i> সাম্প্রতিক ছুটির ইতিহাস ও স্ট্যাটাস</div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>তারিখ</th>
+                                    <th>টাইপ</th>
+                                    <th>ছুটির কারণ</th>
+                                    <th>ফাইল</th>
+                                    <th>স্ট্যাটাস</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leave-table-body">
+                                <!-- ডেটা এখানে স্ক্রিপ্ট দিয়ে লোড হবে -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- নতুন ছুটি যোগ করার ফর্ম -->
+            <div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-plus"></i> নতুন ছুটির এন্ট্রি</div>
+                    <form id="leave-form">
+                        <div class="form-group">
+                            <label>ছুটির ধরণ</label>
+                            <select id="leave-type" required>
+                                <option value="CL">CL (নৈমিত্তিক ছুটি)</option>
+                                <option value="EL">EL (অর্জিত ছুটি)</option>
+                                <option value="Official">সরকারি অনুমতি ছুটি</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>কত দিন?</label>
+                            <input type="number" id="leave-days" min="1" required placeholder="দিনের সংখ্যা লিখুন">
+                        </div>
+                        <div class="form-group">
+                            <label>ছুটি কাটানোর কারণ / বিবরণ</label>
+                            <textarea id="leave-reason" rows="3" required placeholder="যেমন: পারিবারিক কাজ, চিকিৎসা ইত্যাদি"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>আবেদনপত্র / GO কপি আপলোড</label>
+                            <input type="file" id="leave-file">
+                        </div>
+                        <button type="submit" class="btn"><i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ করুন</button>
+                    </form>
+                    <button class="btn btn-export" onclick="exportData()"><i class="fa-solid fa-file-excel"></i> ডেটা এক্সপোর্ট (CSV)</button>
+                </div>
+                
+                <div class="card">
+                    <canvas id="leaveChart" width="100" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ডিফল্ট কোটা ডাটা
+        let quota = { CL: 20, EL: 30, Official: 10 };
+        let leaveHistory = JSON.parse(localStorage.getItem('leaveHistory')) || [];
+
+        // ফর্ম সাবমিট হ্যান্ডলার
+        document.getElementById('leave-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const type = document.getElementById('leave-type').value;
+            const days = parseInt(document.getElementById('leave-days').value);
+            const reason = document.getElementById('leave-reason').value;
+            const fileInput = document.getElementById('leave-file');
+            const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'কোনো ফাইল নেই';
+
+            // নতুন ছুটির অবজেক্ট
+            const newLeave = {
+                date: new Date().toLocaleDateString('bn-BD'),
+                type: type,
+                days: days,
+                reason: reason,
+                file: fileName,
+                status: 'Pending'
+            };
+
+            leaveHistory.push(newLeave);
+            localStorage.setItem('leaveHistory', JSON.stringify(leaveHistory));
+            
+            updateDashboard();
+            this.reset();
+        });
+
+        // ড্যাশবোর্ড আপডেট করার ফাংশন
+        function updateDashboard() {
+            let used = { CL: 0, EL: 0, Official: 0 };
+            const tbody = document.getElementById('leave-table-body');
+            tbody.innerHTML = '';
+
+            leaveHistory.forEach(leave => {
+                used[leave.type] += leave.days;
+                
+                // টেবিল রো তৈরি
+                const row = `<tr>
+                    <td>${leave.date}</td>
+                    <td><b>${leave.type}</b> (${leave.days} দিন)</td>
+                    <td>${leave.reason}</td>
